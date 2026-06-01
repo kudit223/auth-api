@@ -1,16 +1,26 @@
-const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 
-exports.authHash = async (req,res,next)=>{
-    const {password} = req.body;
+const authMiddleware = (req,res,next)=>{
+    try{
+        const token = req.headers.authorization.split(' ')[1];
+        
+        if(!token){
+           return res.status(401).json({
+                success:false,
+                message:'Please Login!!'
+            })
+        }
 
-    if(!password){
-        return res.status(400).json({
-            success:false,
-            message:'All fields required!'
-        });
+        const decoded = jwt.verify(token,process.env.JWT_SECRET);
+        req.user = decoded;
+        next();
+    }catch(error){
+         return res.status(401).json({
+                success:false,
+                message:'Please Login!!'
+            })
     }
-
-    const hashPassword = await bcrypt.hash(password,Number(process.env.BCRYPT_SALTS));
-    req.body.password = hashPassword;
-    next();
 }
+
+
+module.exports = authMiddleware;
