@@ -1,17 +1,37 @@
 const users = require('../models/userAuth');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const joi = require('joi')
 
 exports.createUser= async (req,res)=>{
     try{
         const {name,email,password} = req.body;
 
-        if(!name||!email||!password) {
-           return res.status(400).json({
+        // if(!name||!email||!password) {
+        //    return res.status(400).json({
+        //         success:false,
+        //         message:'All fields required!'
+        //     })
+        // }
+        const schema = joi.object({
+            name:joi.string().trim().min(3).max(50).required(),
+            email:joi.string().email().lowercase().trim().required(),
+            password:joi.string().trim().regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/).required()
+        });
+
+        const {error} = schema.validate({
+            name,
+            email,
+            password
+        })
+
+        if(error){
+            return res.status(400).json({
                 success:false,
-                message:'All fields required!'
+                message:error.message
             })
         }
+
         const isEamilidExists = await users.findOne({email:email});
         if(isEamilidExists){
             return res.status(200).json({
@@ -46,11 +66,27 @@ exports.loginUser = async (req,res)=>{
 
         const {email,password} = req.body;
 
-        if(!email||!password){
+        // if(!email||!password){
+        //     return res.status(400).json({
+        //         success:false,
+        //         message:'All fields required!!'
+        //     });
+        // }
+
+        const schema = joi.object({
+            email:joi.string().email().trim().lowercase().required(),
+            password:joi.string().trim().regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/).required()
+        });
+
+        const {error} = schema.validate({
+            email,
+            password
+        })
+          if(error){
             return res.status(400).json({
                 success:false,
-                message:'All fields required!!'
-            });
+                message:error.message
+            })
         }
         
         const userDetails = await users.findOne({email:email});
